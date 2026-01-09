@@ -20,7 +20,15 @@ declare global {
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://brainly-liart.vercel.app", // EXACT frontend domain
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// Preflight support (important)
 app.options("*", cors());
 
 

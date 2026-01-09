@@ -24,12 +24,12 @@ const zod_1 = require("zod");
 const contentMiddleware_1 = __importDefault(require("./middlewares/contentMiddleware"));
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({
-    origin: [
-        "http://localhost:5173", // Localhost frontend
-    ],
+    origin: "https://brainly-liart.vercel.app", // EXACT frontend domain
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true, // Allow credentials (cookies or JWT tokens)
+    allowedHeaders: ["Content-Type", "Authorization"],
 }));
+// Preflight support (important)
+app.options("*", (0, cors_1.default)());
 app.use(express_1.default.json());
 app.get("/", (req, res) => {
     res.status(200).json({
