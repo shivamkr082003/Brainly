@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const db_1 = require("./utils/db");
 const schema_1 = require("./models/schema");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -26,7 +25,7 @@ const app = (0, express_1.default)();
 app.use((0, cors_1.default)({
     origin: [
         "http://localhost:5173",
-       // Vercel frontend
+        "https://brainly-pas5.vercel.app", // Vercel frontend
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true, // Allow credentials (cookies or JWT tokens)
@@ -308,7 +307,7 @@ app.get("/api/v1/getuserinfo", userMiddleware_1.userMiddleware, (req, res) => __
         res.status(500).json({ message: "Internal server error" });
     }
 }));
-app.listen(3000, () => {
-    console.log("server running succesfull");
-    (0, db_1.connectDb)();
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log("server running on port", PORT);
 });
