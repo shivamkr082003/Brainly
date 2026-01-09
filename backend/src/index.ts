@@ -23,7 +23,7 @@ const app = express();
 app.use(
   cors({
     origin: [
-      "http://localhost:5173", 
+      "http://localhost:5173", // Localhost frontend
       
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
@@ -344,9 +344,13 @@ app.get("/api/v1/getuserinfo", userMiddleware, async (req, res) => {
   }
 });
 
+// app.listen(3000, () => {
+//   console.log("server running succesfull");
+//   connectDb();
+// });
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log("server running on port", PORT);
+   connectDb();
 });
-
