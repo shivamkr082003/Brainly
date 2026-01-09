@@ -24,7 +24,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://brainly-liart.vercel.app/", // Localhost frontend
+      "https://brainly-liart.vercel.app", // Localhost frontend
       
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
