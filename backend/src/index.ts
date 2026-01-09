@@ -24,7 +24,6 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173", 
-      "https://brainly-pas5.vercel.app", // Vercel frontend
       
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
