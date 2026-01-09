@@ -23,7 +23,7 @@ const SignIn = () => {
           email,
           password,
         },
-        { withCredentials: true }
+        { withCredentials: false }
       );
 
       if (response.data.token) {
