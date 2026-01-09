@@ -23,7 +23,8 @@ const app = express();
 app.use(
   cors({
     origin: [
-      "http://localhost:5173", // Localhost frontend
+      "http://localhost:5173",
+      "https://brainly-liart.vercel.app/", // Localhost frontend
       
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
