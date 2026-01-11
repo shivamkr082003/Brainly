@@ -3,8 +3,8 @@
 Brainly is a **Second Brain** app that helps users collect and organize content from various sources like **Twitter, YouTube, Google Docs**, and more—all in one centralized place.  
 This project is part of **100xDevs Cohort 3**, built under the guidance of **Harkirat Singh**.
 
-🚀 **Live Demo**: [Brainly App](https://brainlybybeast.vercel.app)  
-💪 **GitHub Repository**: [Brainly on GitHub](https://github.com/BeastxD7/brainly)  
+🚀 **Live Demo**: [Brainly App](https://brainly-liart.vercel.app/)  
+💪 **GitHub Repository**: [Brainly on GitHub](https://github.com/shivamkr082003/Brainly)  
 
 ---
 
@@ -57,7 +57,7 @@ Brainly/
 
 1️⃣ **Clone the repository**  
 ```sh
-git clone https://github.com/BeastxD7/brainly.git
+git clone https://github.com/shivamkr082003/Brainly.git
 cd brainly
 ```
 
@@ -81,12 +81,7 @@ npm run dev
 
 ---
 
-## 🔑 Environment Variables
-Create a `.env` file in the backend folder with:
-```
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
-VITE_API_URL="http://localhost:3000/api"
+
 ```
 
 ---
@@ -130,6 +125,6 @@ This project is licensed under the MIT License.
 
 ---
 
-Made with ❤️ by Beast
+Made with ❤️ by Shivam
 
 # Brainly
