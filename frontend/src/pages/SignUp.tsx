@@ -1,53 +1,54 @@
-import InputBox from "../components/ui/InputBox";
-import Button from "../components/ui/Button";
-import Navbar from "../components/ui/Navbar";
-import { useRef, useState } from "react";
-import axios from "axios";
-import { NavLink } from "react-router";
-const apiUrl = import.meta.env.VITE_API_URL;
+﻿import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { BACKEND_URL } from '../config';
+import axios from 'axios';
 
-const SignUp = () => {
-  const usernameRef = useRef<HTMLInputElement>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
-
-  const [message, setMessage] = useState<string | null>(null);
-  const [errors, setErrors] = useState<string[]>([]);
+const Signup = () => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    name: '',
+  });
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const OnButtonClick = async () => {
-    const username = usernameRef.current?.value;
-    const email = emailRef.current?.value;
-    const password = passwordRef.current?.value;
+  const navigate = useNavigate();
 
-    setMessage(null);
-    setErrors([]);
+  const handleChange = (e: { target: { name: any; value: any; }; }) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    setError('');
+  };
+
+  const handleSubmit = async (e: { preventDefault: () => void; }) => {
+    e.preventDefault();
+    setError('');
     setLoading(true);
 
-    try {
-      const response = await axios.post<{ message: string }>(
-        `${apiUrl}/signup`,
-        {
-          username,
-          email,
-          password,
-        }
-      );
+    const { email, password, name } = formData;
 
-      setMessage(response.data.message); // Success message
-    } catch (error: any) {
-      if (error.response && error.response.status === 400) {
-        // Validation errors
-        const validationErrors = error.response.data.errors.map(
-          (err: any) => err.message
-        );
-        setErrors(validationErrors);
-      } else if (error.response && error.response.status === 403) {
-        // Account already exists
-        setMessage(error.response.data.message);
+    if (!email || !password || !name) {
+      setError('Please fill in all fields.');
+      setLoading(false);
+      return;
+    }
+
+  try {
+    await axios.post(`${BACKEND_URL}/api/v1/signup`, {
+      email,
+      password,
+      name,
+    });
+
+    // ✅ Signup success → signin page
+    navigate('/signin');
+
+  }
+     catch (error: any) {
+      if (error.response?.data?.message === "User already exists. Please sign in.") {
+        navigate('/signin');
       } else {
-        // General error
-        setMessage("Something went wrong. Please try again.");
+        setError(error.response?.data?.message || 'Signup failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -55,89 +56,85 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-secondary flex flex-col">
-      <div className="py-5 flex-shrink-0">
-        <Navbar />
-      </div>
-
-      <div className="flex-grow flex justify-center items-center p-4">
-        <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden max-h-[calc(100vh-10rem)]">
-          <div className="p-8 overflow-y-auto">
-            <h2 className="text-2xl font-bold text-center mb-6 text-primary">
-              Sign Up
-            </h2>
-
-            {/* Show Loading Spinner */}
-            {loading && (
-              <p className="text-blue-500 text-center mb-4">Loading...</p>
-            )}
-
-            {/* Show Success or Error Message */}
-            {message && (
-              <p className="text-center text-green-500 mb-4 p-2 bg-green-100 rounded">
-                {message}
-              </p>
-            )}
-
-            {/* Show Validation Errors */}
-            {errors.length > 0 && (
-              <div className="text-red-500 text-center mb-4 p-2 bg-red-100 rounded">
-                <ul>
-                  {errors.map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <InputBox
-                reference={usernameRef}
-                placeholder="username"
-                type="text"
-                required={true}
-                extraClasses="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <InputBox
-                reference={emailRef}
-                placeholder="email"
-                type="email"
-                required={true}
-                extraClasses="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <InputBox
-                reference={passwordRef}
-                placeholder="password"
-                type="password"
-                required={true}
-                extraClasses="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <div className="flex items-center justify-center">
-                <Button
-                  text="Sign Up"
-                  size="sm"
-                  variant="primary"
-                  OnClickFn={OnButtonClick}
-                  extraClasses=" py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                />
-              </div>
-            </div>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-600 to-blue-500">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md"
+      >
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">Create Account</h2>
+        
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
           </div>
-          <div className="px-8 py-4 bg-gray-50 border-t border-gray-200 text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?
-              <NavLink
-                to="/signin"
-                className="font-medium text-primary hover:underline">
-                 Sign In
-              </NavLink>
-            </p>
-          </div>
+        )}
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="name">
+            Full Name
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
+            placeholder="Enter your full name"
+          />
         </div>
-      </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="email">
+            Email Address
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
+            placeholder="Enter your email"
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="password">
+            Password
+          </label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
+            placeholder="Enter your password"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition duration-200 font-medium disabled:bg-gray-400"
+        >
+          {loading ? 'Creating Account...' : 'Sign Up'}
+        </button>
+
+        <p className="mt-4 text-center text-sm text-gray-600">
+          Already have an account?{' '}
+          <button
+            type="button"
+            onClick={() => navigate('/signin')}
+            className="text-purple-600 hover:text-purple-700 font-medium"
+          >
+            Sign In
+          </button>
+        </p>
+      </form>
     </div>
   );
 };
 
-export default SignUp;
-
+export default Signup;

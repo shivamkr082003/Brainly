@@ -1,357 +1,310 @@
-import express from "express";
-import { connectDb } from "./utils/db";
-import { UserModel, ContentModel } from "./models/schema";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
-import { userMiddleware } from "./middlewares/userMiddleware";
-import cors from "cors";
-import { signupSchema, signinSchema } from "./utils/zodValidation";
-import { z } from "zod";
-import contentMiddleware from "./middlewares/contentMiddleware";
+import dotenv from "dotenv";
+dotenv.config();
 
-declare global {
-  namespace Express {
-    export interface Request {
-      userId: string;
-      username: string;
-    }
+import express from "express";
+import { userMiddleware } from "./middlewares/userMiddleware";
+import { UserModel, ContentModel, LinkModel } from "./models/schema";
+
+import { random } from "nanoid";
+import { connectDb } from "./utils/db";
+import crypto from "crypto";
+
+
+import { Request, Response } from 'express';
+import { z } from 'zod'; 
+import bcrypt from 'bcrypt';
+import jwt from "jsonwebtoken";
+
+import cors from 'cors';
+
+// Define allowed origins for CORS
+const allowedOrigins = [
+    'http://localhost:3000', // local frontend
+    'https://brainly-app-r261.vercel.app', // deployed frontend
+    'https://your-frontend-url.vercel.app', // deployed frontend (example)
+    // Add more allowed origins as needed
+];
+
+interface AuthRequest extends Request {
+    userId?: string; 
   }
-}
+
+         
+
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "https://brainly-liart.vercel.app", // EXACT frontend domain
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// Preflight support (important)
-app.options("*", cors());
-
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Allow all Vercel domains
+    if (origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all for now, you can restrict later
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.status(200).json({
-    status: "success",
-    message: "Welcome to Brainly API | Backend Server is up and running.",
-  });
+// Handle preflight requests
+app.options('*', cors());
+
+app.get("/", (req: Request, res: Response) => {
+    res.json({ message: "Brainly API is running" });
 });
 
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "success",
-    message: "Server is healthy and running on Render!",
-    uptime: process.uptime(), // Time the server has been running in seconds
-    timestamp: new Date().toISOString(), // Current server time
+
+
+app.post("/api/v1/signup", async (req: Request, res: Response): Promise<void> => {
+
+  const requireBody = z.object({
+    email: z.string().email(),
+    password: z.string().min(6),
+    name: z.string().min(2),
   });
-});
 
-app.post("/api/v1/signup", async (req, res) => {
-  try {
-    // Validate the request body using Zod
-    const { username, email, password } = signupSchema.parse(req.body);
+  const parsed = requireBody.safeParse(req.body);
 
-    const existingUsername = await UserModel.findOne({ username });
-
-    if (existingUsername) {
-      res.status(403).json({
-        message: "Username already taken, try other username",
-        username: existingUsername,
-      });
-    } else {
-      const existingUser = await UserModel.findOne({ email });
-
-      if (!existingUser) {
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        await UserModel.create({
-          username,
-          email,
-          password: hashedPassword,
-        });
-
-        res.status(201).json({
-          message: "User signed up successfully!",
-          username,
-        });
-      } else {
-        res.status(403).json({
-          message: "Account already exists",
-          username: existingUser.username,
-        });
-      }
-    }
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      // Handle validation errors
-      res.status(400).json({
-        message: "Validation error",
-        errors: error.errors, // Contains detailed validation errors
-      });
-    } else {
-      res.status(500).json({
-        message: "Something went wrong",
-      });
-    }
+  if (!parsed.success) {
+    res.status(400).json({
+      message: "Invalid input",
+      error: parsed.error,
+    });
+    return;
   }
-});
 
-app.post("/api/v1/signin", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, name } = parsed.data; // ✅ FIX
 
   try {
     const existingUser = await UserModel.findOne({ email });
 
     if (existingUser) {
-      const isMatch = await bcrypt.compare(password, existingUser.password);
-
-      if (isMatch) {
-        if (!process.env.JWT_SECRET) {
-          throw new Error("JWT_SECRET is not defined");
-        }
-        const token = jwt.sign(
-          { id: existingUser._id, username: existingUser.username },
-          process.env.JWT_SECRET
-        );
-
-        res.status(200).json({
-          message: "user signed in",
-          token,
-          username: existingUser.username,
-        });
-      } else {
-        res.status(401).json({
-          message: "invalid credential",
-        });
-      }
-    } else {
       res.status(400).json({
-        message: "Account Doesn't exist.",
+        message: "User already exists. Please sign in.",
       });
-    }
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      // Handle validation errors
-      res.status(400).json({
-        message: "Validation error",
-        errors: error.errors, // Contains detailed validation errors
-      });
-    } else {
-      res.status(500).json({
-        message: "Something went wrong",
-      });
-    }
-  }
-});
-
-app.post(
-  "/api/v1/content",
-  userMiddleware,
-  contentMiddleware,
-  async (req, res) => {
-    try {
-      const { link, type, title } = req.body;
-
-      const existLink = await ContentModel.find({
-        link,
-        userId: req.userId,
-      });
-
-      if (existLink.length > 0) {
-        res.status(409).json({
-          message: "Content already exists",
-        });
-      } else {
-        await ContentModel.create({
-          link,
-          type,
-          title,
-          userId: req.userId,
-          username: req.username,
-        });
-
-        res.status(200).json({
-          message: "Content Added",
-        });
-      }
-    } catch (error) {
-      res.status(500).json({
-        message: "something went wrong",
-        error,
-      });
-      console.log(error);
-    }
-  }
-);
-
-app.get("/api/v1/content", userMiddleware, async (req, res) => {
-  try {
-    const { userId } = req;
-    const { filter } = req.query;
-
-    const contents = await ContentModel.find({
-      userId,
-    }).populate("userId", "username");
-
-    if (contents) {
-      if (filter == "all") {
-        res.status(200).json({
-          contents,
-        });
-      } else if (filter == "youtube") {
-        const youtubeContents = contents.filter(
-          (content) => content.type === "youtube"
-        );
-        res.status(200).json({
-          contents: youtubeContents,
-        });
-      } else if (filter == "tweet") {
-        const tweetContents = contents.filter(
-          (content) => content.type === "tweet"
-        );
-        res.status(200).json({
-          contents: tweetContents,
-        });
-      } else {
-        res.status(400).json({
-          message: "No content created by the user | Wrong filter",
-          filter,
-        });
-      }
-    }
-  } catch (error) {
-    res.status(500).json({
-      error,
-    });
-  }
-});
-
-app.delete("/api/v1/content", userMiddleware, async (req, res) => {
-  try {
-    const { contentId } = req.body;
-
-    const deleteContent = await ContentModel.deleteMany({
-      _id: contentId,
-      userId: req.userId,
-    });
-
-    if (deleteContent.deletedCount > 0) {
-      res.status(200).json({
-        message: "Content Deleted!",
-      });
-    } else {
-      res.status(400).json({
-        message: "No Content Found!",
-      });
-    }
-  } catch (error) {
-    res.status(400).json({
-      message: "Something went wRONG",
-    });
-  }
-});
-
-app.post("/api/v1/brain/share", userMiddleware, async (req, res) => {
-  try {
-    const { share } = req.body;
-
-    if (share) {
-      const updatedUser = await UserModel.findByIdAndUpdate(
-        req.userId,
-        { isPublic: share },
-        { new: true }
-      );
-
-      res.status(200).json({
-        message: "set to public",
-      });
-    } else {
-      const updatedUser = await UserModel.findByIdAndUpdate(
-        req.userId,
-        { isPublic: share },
-        { new: true }
-      );
-
-      res.status(200).json({
-        message: "set to private",
-      });
-    }
-  } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      error,
-    });
-  }
-});
-
-app.get("/api/v1/brain/:username", async (req, res) => {
-  const { username } = req.params;
-
-  try {
-    const userinfo = await UserModel.findOne({ username });
-
-    if (userinfo) {
-      if (userinfo.isPublic === true) {
-        const contents = await ContentModel.find({ username });
-
-        res.status(200).json({
-          contents,
-          message: "Contents fetched successfully 🎉",
-        });
-      } else {
-        res.status(200).json({
-          contents: [],
-          message: "User Brain is Private 🤐",
-        });
-      }
-    } else {
-      res.status(204).json({
-        contents: [],
-        message: "No users found with this username 💀",
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      contents: [],
-      message: "Something went wrong | server error",
-    });
-  }
-});
-
-app.get("/api/v1/getuserinfo", userMiddleware, async (req, res) => {
-  try {
-    const userInfo = await UserModel.findOne({ _id: req.userId }).select(
-      "username isPublic"
-    );
-
-    if (!userInfo) {
-      res.status(404).json({ message: "User not found" });
       return;
     }
 
-    res.status(200).json({
-      message: "User Details Found",
-      userInfo,
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await UserModel.create({
+      email,
+      password: hashedPassword,
+      name,
     });
-  } catch (error) {
-    console.error("Error fetching user info:", error);
-    res.status(500).json({ message: "Internal server error" });
+
+    res.status(201).json({
+      message: "User created successfully",
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+      },
+    });
+
+  } catch (e) {
+    console.error("Signup error:", e); // 🔥 VERY IMPORTANT
+    res.status(500).json({
+      message: "Error creating user",
+    });
   }
 });
 
-// app.listen(3000, () => {
-//   console.log("server running succesfull");
-//   connectDb();
-// });
+
+
+
+
+app.post("/api/v1/signin", async (req: Request, res: Response): Promise<void> => {
+    const requireBody = z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+    });
+
+    const parseDataWithSuccess = requireBody.safeParse(req.body);
+
+    if(!parseDataWithSuccess.success) {
+        res.status(400).json({
+            message: "Invalid input",
+        });
+        return;
+    }
+
+    const {email, password} = req.body;
+
+    try {
+        const user = await UserModel.findOne({ email });
+
+        if(!user) {
+            res.status(400).json({
+                message: "User not found. Please sign up.",
+            });
+            return;
+        }
+
+        const passwordMatch = await bcrypt.compare(password, user.password);
+
+        if (!passwordMatch) {
+            res.status(400).json({
+                message: "Invalid credentials",
+            });
+            return;
+        }
+
+        const token = jwt.sign({
+            id: user._id
+        }, process.env.JWT_SECRET as string, { expiresIn: "7d" });
+
+        res.status(200).json({
+            token,
+            user: { id: user._id, email: user.email, name: user.name },
+            message: "Signed in successfully",
+        });
+    } catch (e) {
+        console.error("🔥 SIGNUP ERROR FULL 👉", e);
+  res.status(500).json({
+    message: "Error creating user",
+    error: String(e),
+        });
+    }
+});
+
+
+app.post("/api/v1/content", userMiddleware, async (req: AuthRequest, res:Response) => {
+    const link = req.body.link;
+    const type = req.body.type;
+    await ContentModel.create({
+        link,
+        type,
+        title: req.body.title,
+        userId: req.userId,
+        tags: []
+    })
+
+     res.json({
+        message: "Content added"
+    })
+
+})
+
+app.get("/api/v1/content", userMiddleware, async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    const content = await ContentModel.find({
+        userId: userId
+    }).populate("userId", "name email");
+
+    res.json({
+        content
+    })
+})
+
+app.delete("/api/v1/content", userMiddleware, async (req: AuthRequest, res: Response) => {
+    const contentId = req.body.contentId;
+
+    await ContentModel.deleteMany({
+       _id: contentId,
+        userId: req.userId
+    }) 
+
+    res.json({
+        message: "Message as been Deleted",
+    })
+})
+
+
+
+app.post("/api/v1/brain/share",  userMiddleware, async (req: AuthRequest, res: Response) => {
+    const share = req.body.share;
+    
+    try {
+        if(share) {
+            const existingLink = await LinkModel.findOne({
+                userId: req.userId
+            });
+
+            if(existingLink) {
+                res.json({
+                    hash: existingLink.hash
+                });
+                return;
+            }
+
+            const hash = crypto.randomBytes(10).toString("hex");
+            await LinkModel.create({
+                userId: req.userId,
+                hash: hash
+            });
+
+            res.json({
+                hash: hash
+            });
+        } else {
+            await LinkModel.deleteOne({
+                userId: req.userId,
+            });
+
+            res.json({
+                message: "Share link removed"
+            });
+        }
+    } catch(e) {
+        res.status(500).json({
+            message: "Error creating share link"
+        });
+    }
+})
+
+app.get("/api/v1/brain/:shareLink", async (req, res) => {
+    const hash = req.params.shareLink;
+
+   const link =  await LinkModel.findOne({
+        hash
+    });
+
+    if (!link) {
+        res.status(411).json({
+         message: "Sorry incorrect input"
+        })
+        return;
+    }
+
+    const content = await ContentModel.find({
+        userId: link.userId
+    })
+
+const user = await UserModel.findOne({
+    _id: link.userId
+})
+
+if(!user) {
+    res.status(411).json({
+        message: "User not found"
+       })
+       return;
+}
+
+
+    res.json({
+      name: user.name,
+      email: user.email,
+      content: content
+    })
+
+})
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("server running on port", PORT);
-   connectDb();
+    console.log("Server is running on port 3000");
+    connectDb();
 });
