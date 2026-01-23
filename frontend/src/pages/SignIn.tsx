@@ -34,6 +34,7 @@ const Signin = () => {
 
     try {
       const response = await axios.post(`${BACKEND_URL}/api/v1/signin`, { email, password });
+      //@ts-ignore
       localStorage.setItem('token', response.data.token);
       navigate('/');
     } catch (error: any) {

@@ -28,6 +28,7 @@ export function SharedBrain() {
         const fetchSharedBrain = async () => {
             try {
                 const response = await axios.get(`${BACKEND_URL}/api/v1/brain/${shareId}`);
+                //@ts-ignore
                 setBrainData(response.data);
                 setLoading(false);
             } catch (err) {

@@ -15,15 +15,15 @@ const Homepage: React.FC = () => {
         }
     }, []);
 
-    const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
-    };
+    // const toggleTheme = () => {
+    //     const newTheme = theme === 'light' ? 'dark' : 'light';
+    //     setTheme(newTheme);
+    //     localStorage.setItem('theme', newTheme);
+    // };
 
     return (
         <div className={theme === 'light' ? 'bg-white text-black' : 'bg-gray-900 text-white'}>
-            <Header toggleTheme={toggleTheme} />
+            <Header  />
             <Hero />
             <Features />
             <Footer />

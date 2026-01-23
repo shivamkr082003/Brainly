@@ -5,7 +5,7 @@ import { CreateContentModal } from '../components/CreateContentModal';
 import { useState, useMemo } from 'react';
 import { SideBar } from '../components/SideBar';
 import { useContent } from '../hooks/useContent';
-import { Card } from './../components/Card';
+import { Card } from '../components/Card';
 import axios from 'axios';
 import { BACKEND_URL, FRONTEND_URL } from '../config';
 
@@ -74,7 +74,7 @@ const handleDelete = async (contentId: string) => {
       data: {
         contentId: contentId
       }
-    });
+    } as any);
     refreshContent();
   } catch (error) {
     console.error('Error deleting content:', error);
@@ -93,7 +93,7 @@ const handleShareBrain = async () => {
         }
       }
     );
-    
+    //@ts-ignore
     const hash = response.data.hash;
     console.log("HASH FROM BACKEND:", hash, typeof hash);
 

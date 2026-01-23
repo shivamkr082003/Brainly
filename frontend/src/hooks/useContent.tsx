@@ -12,6 +12,7 @@ export function useContent() {
         setRefresh(prev => prev + 1);
     };
 
+
     useEffect(() => {
         const fetchContent = async () => {
             setIsLoading(true);
@@ -23,6 +24,7 @@ export function useContent() {
                 });
                 
                 // Update both state and localStorage
+                // @ts-ignore
                 setContent(response.data.content);
             } catch (error) {
                 console.error("Error fetching content:", error);

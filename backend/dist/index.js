@@ -26,7 +26,7 @@ const cors_1 = __importDefault(require("cors"));
 // Define allowed origins for CORS
 const allowedOrigins = [
     'http://localhost:3000', // local frontend
-    'https://brainly-liart.vercel.app', // deployed frontend
+    'https://brainly-app-r261.vercel.app', // deployed frontend
     'https://your-frontend-url.vercel.app', // deployed frontend (example)
     // Add more allowed origins as needed
 ];
@@ -55,7 +55,7 @@ app.use((0, cors_1.default)({
 app.use(express_1.default.json());
 // Handle preflight requests
 app.options('*', (0, cors_1.default)());
-app.get("/", (req, res) => {
+app.get("/health", (req, res) => {
     res.json({ message: "Brainly API is running" });
 });
 app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {

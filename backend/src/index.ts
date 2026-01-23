@@ -61,7 +61,7 @@ app.use(express.json());
 // Handle preflight requests
 app.options('*', cors());
 
-app.get("/", (req: Request, res: Response) => {
+app.get("/health", (req: Request, res: Response) => {
     res.json({ message: "Brainly API is running" });
 });
 

@@ -2,7 +2,7 @@
 
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Signin from './pages/SignIn';
-import { DashBoard } from './pages/dashboard';
+import { DashBoard } from './pages/Dashboard';
 import Homepage from './components/Homepage';
 import { Features } from './components/Features';
 import Signup from './pages/SignUp';
